@@ -1,56 +1,30 @@
-vim.g.startify_custom_header = 'startify#center(["WELCOME BACK COMMANDER"])'
-vim.g.startify_files_number = 10
-vim.g.startify_bookmarks = {
-  { ['s'] = '~/cluster/odp' },
-  { ['k'] = '~/cluster/obkv/odp' },
-  { ['i'] = '~/.config/nvim/init.vim' },
-  { ['z'] = '~/.zshrc' },
-}
+local M = {}
 
-vim.g.rainbow_active = 1
-vim.g.rainbow_conf = {
-  guifgs = { 'royalblue3', 'darkorange3', 'seagreen3', 'firebrick' },
-  ctermfgs = { 'lightblue', 'lightyellow', 'lightcyan', 'lightmagenta' },
-  operators = '_,_',
-  parentheses = {
-    'start=/(/ end=/)/ fold',
-    'start=/\\[/ end=/\\]/ fold',
-    'start=/{/ end=/}/ fold',
-  },
-  separately = {
-    ['*'] = {},
-    tex = {
-      parentheses = {
-        'start=/(/ end=/)/',
-        'start=/\\[/ end=/\\]/',
-      },
-    },
-  },
-}
+function M.setup_colorscheme()
+  vim.opt.termguicolors = true
+  vim.cmd('colorscheme kanagawa')
+end
 
-vim.g.leetcode_china = 1
-vim.g.leetcode_solution_filetype = 'python3'
-vim.g.leetcode_browser = 'chrome'
+function M.setup_nvim_tree_globals()
+  vim.g.loaded_netrw = 1
+  vim.g.loaded_netrwPlugin = 1
+end
 
-vim.cmd('colorscheme kanagawa')
-vim.g.airline_theme = 'one'
-
-vim.o.statusline = vim.o.statusline .. [[%{get(b:,"vista_nearest_method_or_function","")}]]
-vim.g.vista_icon_indent = { '╰─▸ ', '├─▸ ' }
-vim.g.vista_sidebar_position = 'vertical topleft'
-vim.g.vista_sidebar_width = 50
-vim.g.vista_default_executive = 'nvim_lsp'
-
-vim.keymap.set('n', '<leader>gv', '<cmd>Vista nvim_lsp<CR>', { noremap = true, silent = true })
-
-local ok_bufferline, bufferline = pcall(require, 'bufferline')
-if ok_bufferline then
-  bufferline.setup({
+function M.setup_bufferline()
+  require('bufferline').setup({
     options = {
+      diagnostics = 'nvim_lsp',
+      always_show_bufferline = true,
       offsets = {
         {
           filetype = 'NvimTree',
           text = 'File Explorer',
+          text_align = 'left',
+          separator = true,
+        },
+        {
+          filetype = 'aerial',
+          text = 'Symbols',
           text_align = 'left',
           separator = true,
         },
@@ -59,48 +33,121 @@ if ok_bufferline then
   })
 end
 
-vim.g.loaded_netrw = 1
-vim.g.loaded_netrwPlugin = 1
-vim.opt.termguicolors = true
-
-local function nvim_tree_on_attach(bufnr)
-  local api = require('nvim-tree.api')
-  api.config.mappings.default_on_attach(bufnr)
+function M.setup_lualine()
+  require('lualine').setup({
+    options = {
+      theme = 'auto',
+      globalstatus = true,
+      component_separators = { left = '│', right = '│' },
+      section_separators = { left = '', right = '' },
+      disabled_filetypes = {
+        statusline = { 'dashboard', 'alpha', 'starter' },
+      },
+    },
+    sections = {
+      lualine_a = { 'mode' },
+      lualine_b = { 'branch', 'diff', 'diagnostics' },
+      lualine_c = { { 'filename', path = 1 } },
+      lualine_x = {
+        {
+          function()
+            local ok, aerial = pcall(require, 'aerial')
+            if not ok then
+              return ''
+            end
+            return aerial.get_location({ sep = ' > ' })
+          end,
+          cond = function()
+            local ok, aerial = pcall(require, 'aerial')
+            return ok and aerial.is_available()
+          end,
+        },
+        'encoding',
+        'fileformat',
+        'filetype',
+      },
+      lualine_y = { 'progress' },
+      lualine_z = { 'location' },
+    },
+  })
 end
 
-require('nvim-tree').setup({
-  sort = { sorter = 'case_sensitive' },
-  view = { width = 30 },
-  renderer = { group_empty = true },
-  filters = { dotfiles = true },
-  on_attach = nvim_tree_on_attach,
-  open_on_tab = false,
-})
+function M.setup_nvim_tree()
+  local function nvim_tree_on_attach(bufnr)
+    local api = require('nvim-tree.api')
+    api.config.mappings.default_on_attach(bufnr)
+  end
 
-require('toggleterm').setup({
-  float_opts = {
-    border = 'single',
-  },
-  size = function(term)
-    if term.direction == 'horizontal' then
-      return 40
-    elseif term.direction == 'vertical' then
-      return vim.o.columns * 0.4
-    end
-  end,
-})
+  require('nvim-tree').setup({
+    sort = {
+      sorter = 'case_sensitive',
+    },
+    view = {
+      width = 32,
+      preserve_window_proportions = true,
+    },
+    renderer = {
+      group_empty = true,
+      highlight_git = true,
+      root_folder_label = false,
+    },
+    filters = {
+      dotfiles = true,
+    },
+    update_focused_file = {
+      enable = true,
+      update_root = false,
+    },
+    diagnostics = {
+      enable = true,
+      show_on_dirs = true,
+    },
+    on_attach = nvim_tree_on_attach,
+  })
+end
 
-vim.g.AutoPairsMapCR = 0
-vim.g.AutoPairsMapBS = 1
-vim.g.AutoPairsShortcutToggle = ''
-vim.g.AutoPairsShortcutFastWrap = ''
-vim.g.AutoPairsShortcutJump = ''
+function M.setup_toggleterm()
+  require('toggleterm').setup({
+    direction = 'float',
+    float_opts = {
+      border = 'single',
+    },
+    size = function(term)
+      if term.direction == 'horizontal' then
+        return 16
+      end
+      if term.direction == 'vertical' then
+        return math.floor(vim.o.columns * 0.4)
+      end
+      return 20
+    end,
+  })
+end
 
-vim.cmd([[
-  inoremap <silent><expr> <CR> pumvisible() ? "\<C-y>" : "\<Plug>AutoPairsReturn"
-  inoremap <silent><expr> <Tab> pumvisible() ? "\<C-n>" : (v:lua.config_check_backspace() ? "\<Tab>" : "\<C-x>\<C-o>")
-  inoremap <silent><expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<C-h>"
-  inoremap <silent><expr> <C-Space> pumvisible() ? "\<C-n>" : "\<C-x>\<C-o>"
-]])
+function M.setup_aerial()
+  require('aerial').setup({
+    backends = { 'lsp', 'treesitter', 'markdown', 'man' },
+    layout = {
+      default_direction = 'prefer_right',
+      max_width = { 40, 0.3 },
+      min_width = 24,
+    },
+    show_guides = true,
+    highlight_on_hover = true,
+    attach_mode = 'window',
+    close_automatic_events = { 'unsupported' },
+  })
+end
 
-require('ibl').setup()
+function M.setup_indent_guides()
+  require('ibl').setup({
+    indent = {
+      char = '▏',
+    },
+    scope = {
+      enabled = true,
+    },
+  })
+end
+
+return M

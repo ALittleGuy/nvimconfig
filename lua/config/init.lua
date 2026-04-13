@@ -1,8 +1,5 @@
 require('config.options')
-require('config.plugins')
 require('config.autocmds')
 require('config.keymaps')
-require('config.ui')
-require('config.lsp')
-require('config.git')
-require('config.treesitter')
+require('config.plugins')
+
