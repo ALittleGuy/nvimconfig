@@ -62,7 +62,12 @@ local function lsp_attach(args)
   map(bufnr, 'n', 'gD', vim.lsp.buf.declaration, 'Go to declaration')
   map(bufnr, 'n', 'gi', vim.lsp.buf.implementation, 'Go to implementation')
   map(bufnr, 'n', 'gY', vim.lsp.buf.type_definition, 'Go to type definition')
-  map(bufnr, 'n', 'gr', vim.lsp.buf.references, 'List references')
+  map(bufnr, 'n', 'gr', function()
+    require('telescope.builtin').lsp_references({
+      include_current_line = false,
+      show_line = false,
+    })
+  end, 'List references')
   map(bufnr, 'n', '<leader>as', vim.lsp.buf.code_action, 'Code action')
   map(bufnr, 'x', '<leader>as', vim.lsp.buf.code_action, 'Range code action')
   map(bufnr, 'n', '<leader>ac', vim.lsp.buf.code_action, 'Code action')

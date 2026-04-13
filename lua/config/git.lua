@@ -64,4 +64,26 @@ function M.setup()
   })
 end
 
+function M.setup_diffview()
+  require('diffview').setup({
+    enhanced_diff_hl = true,
+    use_icons = true,
+    file_panel = {
+      listing_style = 'tree',
+      win_config = {
+        position = 'left',
+        width = 36,
+      },
+    },
+    view = {
+      default = {
+        layout = 'diff2_horizontal',
+      },
+      file_history = {
+        layout = 'diff2_horizontal',
+      },
+    },
+  })
+end
+
 return M
