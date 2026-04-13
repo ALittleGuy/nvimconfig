@@ -1,5 +1,12 @@
 local M = {}
 
+local side_terminal
+
+local function load_toggleterm()
+  require('lazy').load({ plugins = { 'toggleterm.nvim' } })
+  return require('toggleterm.terminal').Terminal
+end
+
 function M.setup_colorscheme()
   vim.opt.termguicolors = true
   vim.cmd('colorscheme kanagawa')
@@ -122,6 +129,33 @@ function M.setup_toggleterm()
       return 20
     end,
   })
+end
+
+function M.toggle_side_terminal()
+  local Terminal = load_toggleterm()
+
+  if not side_terminal then
+    side_terminal = Terminal:new({
+      direction = 'vertical',
+      hidden = true,
+      close_on_exit = false,
+      size = function()
+        return math.max(40, math.floor(vim.o.columns / 3))
+      end,
+      on_open = function(term)
+        vim.schedule(function()
+          if term.window and vim.api.nvim_win_is_valid(term.window) then
+            vim.api.nvim_set_current_win(term.window)
+            vim.cmd('wincmd L')
+            vim.api.nvim_win_set_width(term.window, math.max(40, math.floor(vim.o.columns / 3)))
+            vim.cmd('startinsert')
+          end
+        end)
+      end,
+    })
+  end
+
+  side_terminal:toggle()
 end
 
 function M.setup_aerial()

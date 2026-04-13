@@ -7,6 +7,16 @@ local ignored_filetypes = {
   gitrebase = true,
 }
 
+local function is_real_file_buffer(bufnr)
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == '' or name:match('^%w+://') then
+    return false
+  end
+
+  local parent = vim.fn.fnamemodify(name, ':h')
+  return parent ~= '' and vim.fn.isdirectory(parent) == 1
+end
+
 local function is_normal_writable_buffer(bufnr)
   local bo = vim.bo[bufnr]
   if not autosave_enabled then
@@ -21,7 +31,7 @@ local function is_normal_writable_buffer(bufnr)
     return false
   end
 
-  return vim.api.nvim_buf_get_name(bufnr) ~= ''
+  return is_real_file_buffer(bufnr)
 end
 
 local function autosave_if_normal_buffer(args)
@@ -48,55 +58,14 @@ local function startup_target_dir()
   return nil
 end
 
-local function show_recent_projects()
-  local ok_telescope, telescope = pcall(require, 'telescope')
-  if not ok_telescope then
-    return
-  end
-
-  local ok_project, project_nvim = pcall(require, 'project_nvim')
-  if not ok_project then
-    return
-  end
-
-  local history = require('project_nvim.utils.history')
-  if #project_nvim.get_recent_projects() == 0 then
-    history.read_projects_from_history()
-    vim.wait(200, function()
-      return #project_nvim.get_recent_projects() > 0
-    end)
-  end
-
-  local recent_projects = project_nvim.get_recent_projects()
-  if #recent_projects == 0 then
-    return
-  end
-
-  pcall(telescope.load_extension, 'projects')
-
-  local ok_projects, projects = pcall(function()
-    return telescope.extensions.projects.projects
-  end)
-  if ok_projects and projects then
-    projects({ prompt_title = 'Recent Projects' })
-  end
-end
-
 local function open_startup_sidebar()
-  require('lazy').load({ plugins = { 'nvim-tree.lua', 'telescope.nvim', 'project.nvim' } })
+  require('lazy').load({ plugins = { 'nvim-tree.lua' } })
 
   local target_dir = startup_target_dir()
   if target_dir then
     vim.cmd('NvimTreeOpen ' .. vim.fn.fnameescape(target_dir))
   else
     vim.cmd('NvimTreeFindFile')
-  end
-
-  if target_dir then
-    vim.defer_fn(function()
-      pcall(vim.cmd, 'wincmd p')
-      show_recent_projects()
-    end, 120)
   end
 end
 
